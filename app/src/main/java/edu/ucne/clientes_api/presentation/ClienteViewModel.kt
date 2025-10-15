@@ -2,7 +2,6 @@ package edu.ucne.clientes_api.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.clientes_api.domain.cliente.model.Cliente
 import edu.ucne.clientes_api.domain.cliente.usecases.GetClientesUseCase
@@ -11,7 +10,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
 
 @HiltViewModel
 class ClienteViewModel @Inject constructor(
@@ -34,9 +32,15 @@ class ClienteViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
                 val clientes = getClientesUseCase()
-                _uiState.value = _uiState.value.copy(clientes = clientes, isLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    clientes = clientes,
+                    isLoading = false
+                )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Error desconocido",
+                    isLoading = false
+                )
             }
         }
     }
@@ -49,11 +53,18 @@ class ClienteViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             try {
-                val nuevoCliente = postClienteUseCase(cliente)
-                val updatedList = _uiState.value.clientes + nuevoCliente
-                _uiState.value = _uiState.value.copy(clientes = updatedList, isLoading = false)
+                postClienteUseCase(cliente)
+
+                val clientesActualizados = getClientesUseCase()
+                _uiState.value = _uiState.value.copy(
+                    clientes = clientesActualizados,
+                    isLoading = false
+                )
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(error = e.message, isLoading = false)
+                _uiState.value = _uiState.value.copy(
+                    error = e.message ?: "Error al guardar cliente",
+                    isLoading = false
+                )
             }
         }
     }

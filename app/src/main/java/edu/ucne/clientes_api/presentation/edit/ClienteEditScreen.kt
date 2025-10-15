@@ -10,6 +10,8 @@ import edu.ucne.clientes_api.presentation.ClienteUiEvent
 import edu.ucne.clientes_api.presentation.ClienteViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -18,27 +20,31 @@ fun ClienteEditScreen(
     clienteId: Int,
     viewModel: ClienteViewModel = hiltViewModel()
 ) {
-    // Estados para los campos
     var nombre by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
     var rnc by remember { mutableStateOf("") }
     var limiteCredito by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
 
-    // Aquí podrías cargar los datos si clienteId != -1 (edición)
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(clienteId) {
         if (clienteId != -1) {
-            val cliente = viewModel.getClienteById(clienteId)
-            cliente?.let {
-                nombre = it.nombres
-                direccion = it.direccion
-                rnc = it.rnc
-                limiteCredito = it.limiteCredito.toString()
+            viewModel.getClienteById(clienteId)?.let { cliente ->
+                nombre = cliente.nombres
+                direccion = cliente.direccion
+                rnc = cliente.rnc
+                limiteCredito = cliente.limiteCredito.toString()
             }
         }
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(if (clienteId == -1) "Agregar Cliente" else "Editar Cliente") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text(if (clienteId == -1) "Agregar Cliente" else "Editar Cliente") }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -83,22 +89,29 @@ fun ClienteEditScreen(
 
             Button(
                 onClick = {
-                    // Convierte limiteCredito a Double o Int según tu modelo
+                    if (nombre.isBlank() || direccion.isBlank() || rnc.isBlank()) return@Button
+
+                    isSaving = true
+
                     val cliente = Cliente(
                         clienteId = clienteId,
                         nombres = nombre,
                         direccion = direccion,
                         rnc = rnc,
                         limiteCredito = limiteCredito.toDoubleOrNull() ?: 0.0,
-                        fechaIngreso = "" // Aquí puedes poner la fecha actual o mantener la existente
+                        fechaIngreso = Instant.now().toString()
                     )
 
-                    viewModel.onEvent(ClienteUiEvent.AddCliente(cliente))
-                    navController.popBackStack()
+                    coroutineScope.launch {
+                        viewModel.onEvent(ClienteUiEvent.AddCliente(cliente))
+                        isSaving = false
+                        navController.popBackStack()
+                    }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving
             ) {
-                Text("Guardar")
+                Text(if (isSaving) "Guardando..." else "Guardar")
             }
         }
     }

@@ -10,8 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import edu.ucne.clientes_api.presentation.ClienteUiEvent
 import edu.ucne.clientes_api.presentation.ClienteViewModel
-import edu.ucne.clientes_api.navigation.ClienteScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,53 +22,38 @@ fun ClienteListScreen(
     val state by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.onEvent(edu.ucne.clientes_api.presentation.ClienteUiEvent.LoadClientes)
+        viewModel.onEvent(ClienteUiEvent.LoadClientes)
     }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Clientes") }) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    // Navegar a crear cliente nuevo
-                    navController.navigate(ClienteScreen.EditCliente.createRoute(-1))
-                }
-            ) {
+            FloatingActionButton(onClick = { navController.navigate("edit_cliente/-1") }) {
                 Text("+")
             }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             when {
-                state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.fillMaxSize())
-                }
-                state.error != null -> {
-                    Text("Error: ${state.error}")
-                }
-                else -> {
-                    LazyColumn {
-                        items(state.clientes) { cliente ->
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        // Navegar a editar cliente
-                                        navController.navigate(
-                                            ClienteScreen.EditCliente.createRoute(cliente.clienteId)
-                                        )
-                                    }
-                                    .padding(16.dp)
-                            ) {
-                                Text(text = "ID: ${cliente.clienteId}")
-                                Text(text = "Fecha Ingreso: ${cliente.fechaIngreso}")
-                                Text(text = "Nombre: ${cliente.nombres}")
-                                Text(text = "Dirección: ${cliente.direccion}")
-                                Text(text = "RNC: ${cliente.rnc}")
-                                Text(text = "Límite de Crédito: ${cliente.limiteCredito}")
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Divider()
-                            }
+                state.isLoading -> CircularProgressIndicator(modifier = Modifier.fillMaxSize())
+                state.error != null -> Text("Error: ${state.error}")
+                else -> LazyColumn {
+                    items(state.clientes) { cliente ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    navController.navigate("edit_cliente/${cliente.clienteId}")
+                                }
+                                .padding(16.dp)
+                        ) {
+                            Text("ID: ${cliente.clienteId}")
+                            Text("Fecha: ${cliente.fechaIngreso}")
+                            Text("Nombre: ${cliente.nombres}")
+                            Text("Dirección: ${cliente.direccion}")
+                            Text("RNC: ${cliente.rnc}")
+                            Text("Límite: ${cliente.limiteCredito}")
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
                     }
                 }
